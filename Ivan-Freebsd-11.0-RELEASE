@@ -7,19 +7,14 @@ BSDINSTALL_DISTSITE=ftp://ftp.freebsd.org/pub/FreeBSD/releases/amd64/11.0-RELEAS
 set -o xtrace
 echo "==> Installing Ivan"
 
-# Enable serial and internal consoles
 echo "==> Initializing serial and internal consoles"
 echo "-Dhv" > /boot.config
 echo "cuau0   \"/usr/libexec/getty std.38400\"  xterm   on  secure" >> /etc/ttys
 
 echo "==> Injecting boot loader settings"
 cat << BOOT > /boot/loader.conf
-autoboot_delay="5"
+autoboot_delay="10"
 verbose_loading="YES"
-hw.snd.default_auto=0
-hw.usb.disable_enumeration=1
-hw.usb.no_boot_wait=1
-hw.usb.no_shutdown_wait=1
 BOOT
 
 echo "==> Transcribing defaults"
@@ -31,16 +26,13 @@ dbus_enable="YES"
 
 RC_CONF
 
-# Set Time Zone to UTC
-echo "==> Setting Time Zone to UTC"
+echo "==> Synchronizing Time Zone"
 /bin/cp /usr/share/zoneinfo/UTC /etc/localtime
 /usr/bin/touch /etc/wall_cmos_clock
 /sbin/adjkerntz -a
 
-# Fetch and install binary updates. Ensures we have the latest security fixes.
-echo "==> Running freebsd-update fetch and freebsd-update install"
-# Remove src from update since it's not installed
-# See https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=198030
+echo "==> Updating system"
+# Remove src from update
 sed -i.bak -e s/Components\ src\ world\ kernel/Components\ world\ kernel/g /etc/freebsd-update.conf
 
 cat << FREEBSDUPDATE > /tmp/freebsd-update.conf
@@ -74,12 +66,10 @@ env ASSUME_ALWAYS_YES=YES pkg install -y xorg sudo bash xfce4 firefox thunderbir
 env ASSUME_ALWAYS_YES=YES pkg autoremove
 env ASSUME_ALWAYS_YES=YES pkg clean -a
 
-## Build date used for motd
 BUILDDATE=$(date +%Y%m%d)
 RELEASE="11.0-RELEASE"
 DOC_URL="https://troglodytebrigand.github.io/ivan-homepage/"
 
-# Create MOTD
 echo "Generating /etc/motd"
 mv /etc/motd /etc/motd-backup
 cat << MOTD > /etc/motd
@@ -97,5 +87,4 @@ rm -rf /boot/kernel/*.symbols
 
 echo "Installation complete, rebooting now"
 
-# Reboot
 reboot
